@@ -1,15 +1,18 @@
 name: approvals
 
+# pull_request_target runs this workflow, scripts/approvals.ts and roles.json from the
+# base branch, so a PR cannot weaken its own approval check. It never checks out PR code.
 # Separate from ci.yml: label events re-run only this workflow, so they never
 # replace a failed test result with a "skipped" one.
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, reopened, labeled, unlabeled]
 
 permissions:
   contents: read
   pull-requests: read
   issues: read
+  checks: read
 
 concurrency:
   group: approvals-${{ github.event.pull_request.number }}
@@ -20,6 +23,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
       - uses: actions/setup-node@v4
         with: { node-version: 24, cache: npm }
       - run: npm ci

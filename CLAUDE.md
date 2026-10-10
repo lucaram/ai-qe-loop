@@ -32,13 +32,13 @@ This repo runs an AI quality loop: AI does the work, people approve anything tha
 ## Approvals
 
 - `roles.json` maps each role to GitHub users and the paths it approves. The `approvals` check works out which roles a PR needs from its changed files.
-- A role approves by adding the label `approved:<role>`. CI checks who added it and that it was added after the latest commit.
+- A role approves by adding the label `approved:<role>`. CI checks who added it and that it was added after the latest push. The check runs from the base branch, so a PR cannot change its own approval rules.
 - **Never add `approved:*` labels. Never merge PRs.** A person does both.
 - In this repo all roles map to one user; that is a simulation of a real team (see README).
 
 ## Healer limits
 
-The healer may change locators, waits on elements or responses, and navigation steps. It must not change any `expect(...)`, expected values or tags, and must not add `skip`, `fixme` or `only`. If a test can only pass by changing any of those, stop and open an issue `Possible bug or requirement change: <test name>` with the failure output. The `assertion-guard` check enforces this on `heal/*` branches.
+The healer may change locators, waits on elements or responses, and navigation steps. It must not change any `expect(...)`, expected values or tags, and must not add `skip`, `fixme` or `only` or change `playwright.config.ts`. If a test can only pass by changing any of those, stop and open an issue `Possible bug or requirement change: <test name>` with the failure output. The `assertion-guard` check enforces this on `heal/*` branches.
 
 ## Commands
 

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { evaluateApprovals, requiredRoles, type LabelEvent, type Roles } from './approvals';
+import { changedPaths, evaluateApprovals, pushedAt, requiredRoles, type LabelEvent, type Roles } from './approvals';
 
 const roles: Roles = {
   po: { users: ['anna-po'], approves: ['specs/**'] },
@@ -19,25 +19,25 @@ test('required roles come from changed files; unmatched files need nothing', () 
 });
 
 test('label added by a listed user passes', () => {
-  const r = evaluateApprovals({ roles, changedFiles: ['specs/a.md'], currentLabels: ['approved:po'], events: [labeled('approved:po', 'anna-po')], headCommittedAt: HEAD });
+  const r = evaluateApprovals({ roles, changedFiles: ['specs/a.md'], currentLabels: ['approved:po'], events: [labeled('approved:po', 'anna-po')], headPushedAt: HEAD });
   assert.equal(r.ok, true);
 });
 
 test('missing label fails', () => {
-  const r = evaluateApprovals({ roles, changedFiles: ['specs/a.md'], currentLabels: [], events: [], headCommittedAt: HEAD });
+  const r = evaluateApprovals({ roles, changedFiles: ['specs/a.md'], currentLabels: [], events: [], headPushedAt: HEAD });
   assert.equal(r.ok, false);
   assert.equal(r.statuses[0].reason, 'Label approved:po is missing.');
 });
 
 test('label added by someone outside the role fails', () => {
-  const r = evaluateApprovals({ roles, changedFiles: ['specs/a.md'], currentLabels: ['approved:po'], events: [labeled('approved:po', 'quinn-qe')], headCommittedAt: HEAD });
+  const r = evaluateApprovals({ roles, changedFiles: ['specs/a.md'], currentLabels: ['approved:po'], events: [labeled('approved:po', 'quinn-qe')], headPushedAt: HEAD });
   assert.equal(r.ok, false);
   assert.equal(r.statuses[0].reason, 'approved:po was added by quinn-qe, who is not listed for role po.');
 });
 
 test('a removed label does not count even though it was once added', () => {
   const events = [labeled('approved:po', 'anna-po'), unlabeled('approved:po', 'anna-po', '2026-10-10T12:00:00Z')];
-  const r = evaluateApprovals({ roles, changedFiles: ['specs/a.md'], currentLabels: [], events, headCommittedAt: HEAD });
+  const r = evaluateApprovals({ roles, changedFiles: ['specs/a.md'], currentLabels: [], events, headPushedAt: HEAD });
   assert.equal(r.ok, false);
 });
 
@@ -47,19 +47,35 @@ test('the latest labeled actor wins', () => {
     unlabeled('approved:po', 'anna-po', '2026-10-10T11:30:00Z'),
     labeled('approved:po', 'anna-po', '2026-10-10T12:00:00Z'),
   ];
-  const r = evaluateApprovals({ roles, changedFiles: ['specs/a.md'], currentLabels: ['approved:po'], events, headCommittedAt: HEAD });
+  const r = evaluateApprovals({ roles, changedFiles: ['specs/a.md'], currentLabels: ['approved:po'], events, headPushedAt: HEAD });
   assert.equal(r.ok, true);
 });
 
 test('a label added before the latest commit is stale', () => {
   const r = evaluateApprovals({
     roles, changedFiles: ['specs/a.md'], currentLabels: ['approved:po'],
-    events: [labeled('approved:po', 'anna-po', '2026-10-10T09:00:00Z')], headCommittedAt: HEAD,
+    events: [labeled('approved:po', 'anna-po', '2026-10-10T09:00:00Z')], headPushedAt: HEAD,
   });
   assert.equal(r.ok, false);
   assert.equal(r.statuses[0].reason, 'approved:po was added before the latest commit. Remove it and add it again after reviewing the new changes.');
 });
 
 test('no changed files that need approval passes', () => {
-  assert.equal(evaluateApprovals({ roles, changedFiles: ['docs/x.md'], currentLabels: [], events: [], headCommittedAt: HEAD }).ok, true);
+  assert.equal(evaluateApprovals({ roles, changedFiles: ['docs/x.md'], currentLabels: [], events: [], headPushedAt: HEAD }).ok, true);
+});
+
+test('a renamed file counts under both its old and new path', () => {
+  assert.deepEqual(
+    changedPaths([{ filename: 'docs/old-plan.md', previous_filename: 'specs/PROJ-130-x.md' }, { filename: 'tests/a.spec.ts' }]),
+    ['docs/old-plan.md', 'specs/PROJ-130-x.md', 'tests/a.spec.ts'],
+  );
+  assert.deepEqual(requiredRoles(roles, changedPaths([{ filename: 'docs/x.md', previous_filename: 'specs/a.md' }])), ['po']);
+});
+
+test('push time is the earliest check suite for the head commit, not the commit date', () => {
+  assert.equal(
+    pushedAt([{ created_at: '2026-10-10T10:45:05Z' }, { created_at: '2026-10-10T10:45:01Z' }]),
+    '2026-10-10T10:45:01Z',
+  );
+  assert.throws(() => pushedAt([]), /No check suite/);
 });

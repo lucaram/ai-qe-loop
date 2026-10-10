@@ -8,7 +8,7 @@ description: Stage 2. Fix Playwright tests broken by app changes using the playw
 1. `git switch main && git pull --ff-only`, then run `npm test`. If everything passes, tell the user and stop.
 2. `git switch -c heal/$(date +%F)`
 3. Use the `playwright-test-healer` agent on the failing tests, with this brief:
-   > Fix only locators, waits on elements or responses, and navigation steps. Do not change any `expect(...)`, expected value or tag, and do not add `skip`, `fixme` or `only`. If a test can only pass by changing one of those, leave it unchanged and report it.
+   > Fix only locators, waits on elements or responses, and navigation steps. Do not change any `expect(...)`, expected value or tag, and do not add `skip`, `fixme` or `only` or change `playwright.config.ts`. If a test can only pass by changing one of those, leave it unchanged and report it.
 4. Run `npm run assertion-guard -- --base main`.
    - If it reports violations, restore those files: `git checkout main -- <file>`.
 5. For every test the healer could not fix within the limits, open an issue:

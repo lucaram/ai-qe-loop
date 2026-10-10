@@ -14,8 +14,24 @@ export function requiredRoles(roles: Roles, changedFiles: string[]): string[] {
     .map(([role]) => role);
 }
 
+// A rename counts under both paths, so moving a file out of a role's folder still needs that role.
+export function changedPaths(files: { filename: string; previous_filename?: string }[]): string[] {
+  const paths = new Set<string>();
+  for (const f of files) {
+    paths.add(f.filename);
+    if (f.previous_filename) paths.add(f.previous_filename);
+  }
+  return [...paths].sort();
+}
+
+// When GitHub first saw the head commit (server clock). Commit dates come from the committer's clock and can be faked.
+export function pushedAt(checkSuites: { created_at: string }[]): string {
+  if (checkSuites.length === 0) throw new Error('No check suite found for the head commit.');
+  return checkSuites.map((s) => s.created_at).sort()[0];
+}
+
 export function evaluateApprovals(input: {
-  roles: Roles; changedFiles: string[]; currentLabels: string[]; events: LabelEvent[]; headCommittedAt: string;
+  roles: Roles; changedFiles: string[]; currentLabels: string[]; events: LabelEvent[]; headPushedAt: string;
 }): { ok: boolean; statuses: ApprovalStatus[] } {
   const statuses = requiredRoles(input.roles, input.changedFiles).map((role): ApprovalStatus => {
     const label = `approved:${role}`;
@@ -27,7 +43,7 @@ export function evaluateApprovals(input: {
     if (!present) reason = `Label ${label} is missing.`;
     else if (!addedBy || !input.roles[role].users.includes(addedBy)) {
       reason = `${label} was added by ${addedBy ?? 'unknown'}, who is not listed for role ${role}.`;
-    } else if (new Date(lastAdd!.created_at) < new Date(input.headCommittedAt)) {
+    } else if (new Date(lastAdd!.created_at) < new Date(input.headPushedAt)) {
       reason = `${label} was added before the latest commit. Remove it and add it again after reviewing the new changes.`;
     }
     return { role, label, present, addedBy, reason };
@@ -49,13 +65,18 @@ if (isMain(import.meta.url)) {
   const pr = process.env.PR_NUMBER!;
   const roles = JSON.parse(readFileSync('roles.json', 'utf8')) as Roles;
 
-  const changedFiles = gh('pr', 'diff', pr, '--repo', repo, '--name-only').split('\n').filter(Boolean);
-  const currentLabels = gh('pr', 'view', pr, '--repo', repo, '--json', 'labels', '--jq', '.labels[].name').split('\n').filter(Boolean);
-  const headCommittedAt = gh('pr', 'view', pr, '--repo', repo, '--json', 'commits', '--jq', '.commits[-1].committedDate').trim();
-  const events = gh('api', `repos/${repo}/issues/${pr}/events`, '--paginate', '--jq', '.[]')
-    .split('\n').filter(Boolean).map((line) => JSON.parse(line) as LabelEvent);
+  const lines = (text: string) => text.split('\n').filter(Boolean);
 
-  const result = evaluateApprovals({ roles, changedFiles, currentLabels, events, headCommittedAt });
+  const files = lines(gh('api', `repos/${repo}/pulls/${pr}/files`, '--paginate', '--jq', '.[] | {filename, previous_filename}'))
+    .map((line) => JSON.parse(line) as { filename: string; previous_filename?: string });
+  const changedFiles = changedPaths(files);
+  const currentLabels = lines(gh('pr', 'view', pr, '--repo', repo, '--json', 'labels', '--jq', '.labels[].name'));
+  const headSha = gh('pr', 'view', pr, '--repo', repo, '--json', 'headRefOid', '--jq', '.headRefOid').trim();
+  const headPushedAt = pushedAt(JSON.parse(gh('api', `repos/${repo}/commits/${headSha}/check-suites`, '--jq', '[.check_suites[] | {created_at}]')));
+  const events = lines(gh('api', `repos/${repo}/issues/${pr}/events`, '--paginate', '--jq', '.[]'))
+    .map((line) => JSON.parse(line) as LabelEvent);
+
+  const result = evaluateApprovals({ roles, changedFiles, currentLabels, events, headPushedAt });
   const summary = renderSummary(result.statuses);
   console.log(summary);
   if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);

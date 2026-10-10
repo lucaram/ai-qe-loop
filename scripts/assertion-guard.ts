@@ -5,7 +5,9 @@ import { isMain } from './cli';
 export interface Violation { file: string; line: string }
 
 // The healer may fix locators, waits and navigation. It must not touch what a test checks.
-const FORBIDDEN = [/expect\(/, /\.skip\(/, /\.fixme\(/, /\.only\(/, /\btag\s*:/];
+const FORBIDDEN = [/expect\(/, /\.(not\.)?to[A-Z]\w*\(/, /\.skip\(/, /\.fixme\(/, /\.only\(/, /\btag\s*:/];
+// Config can weaken every test at once (retries, timeouts, testIgnore), so any change counts.
+const PROTECTED_FILES = ['playwright.config.ts'];
 
 export function findViolations(diff: string): Violation[] {
   const violations: Violation[] = [];
@@ -16,7 +18,8 @@ export function findViolations(diff: string): Violation[] {
       continue;
     }
     if (line.startsWith('--- ')) continue;
-    if ((line.startsWith('+') || line.startsWith('-')) && FORBIDDEN.some((re) => re.test(line))) {
+    const changed = line.startsWith('+') || line.startsWith('-');
+    if (changed && (PROTECTED_FILES.includes(file) || FORBIDDEN.some((re) => re.test(line)))) {
       violations.push({ file, line });
     }
   }
@@ -26,7 +29,7 @@ export function findViolations(diff: string): Violation[] {
 if (isMain(import.meta.url)) {
   const baseIndex = process.argv.indexOf('--base');
   const base = baseIndex > -1 ? process.argv[baseIndex + 1] : 'main';
-  const diff = execFileSync('git', ['diff', `${base}...HEAD`, '--', 'tests/'], { encoding: 'utf8' });
+  const diff = execFileSync('git', ['diff', `${base}...HEAD`, '--', 'tests/', ...PROTECTED_FILES], { encoding: 'utf8' });
   const violations = findViolations(diff);
 
   const report = violations.length

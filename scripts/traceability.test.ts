@@ -51,3 +51,23 @@ test('typo tags are errors', () => {
     'Test "d" has tag @AC-1 but no story tag.',
   ]);
 });
+
+test('a context update that adds an AC asks for a re-plan instead of failing', () => {
+  const grown = parseStory('Key: PROJ-130\nAC-1: a\nAC-2: b\nAC-3: c\n');
+  const result = evaluate({ stories: [grown], rules: ['BR-001'], plans: [plan], tests: [
+    { title: 'a', file: 'f', tags: ['@PROJ-130', '@AC-1', '@BR-001'] },
+    { title: 'b', file: 'f', tags: ['@PROJ-130', '@AC-2', '@BR-001'] },
+  ] });
+  assert.deepEqual(result.errors, []);
+  assert.deepEqual(result.warnings, ['PROJ-130 AC-3 is in the story but not in the approved plan: re-plan needed.']);
+});
+
+test('a context update that removes an AC keeps its tests valid and asks for a re-plan', () => {
+  const shrunk = parseStory('Key: PROJ-130\nAC-1: a\n');
+  const result = evaluate({ stories: [shrunk], rules: ['BR-001'], plans: [plan], tests: [
+    { title: 'a', file: 'f', tags: ['@PROJ-130', '@AC-1', '@BR-001'] },
+    { title: 'b', file: 'f', tags: ['@PROJ-130', '@AC-2', '@BR-001'] },
+  ] });
+  assert.deepEqual(result.errors, []);
+  assert.deepEqual(result.warnings, ['PROJ-130 AC-2 is in the approved plan but no longer in the story: re-plan needed.']);
+});

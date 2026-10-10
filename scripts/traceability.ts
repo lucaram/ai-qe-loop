@@ -47,6 +47,9 @@ export function evaluate({ stories, rules, plans, tests }: TraceInput): TraceRes
   const warnings: string[] = [];
   const rows: TraceRow[] = [];
   const storyByKey = new Map(stories.map((s) => [s.key, s]));
+  // ACs the approved plan covers. These, not the latest story text, are what tests must cover:
+  // a context update must not fail CI before a new plan can be written for it.
+  const planAcs = new Map(plans.map((p) => [p.key, [...new Set([...p.text.matchAll(/\[(AC-\d+)\]/g)].map((m) => m[1]))]]));
 
   // 1. Every tag must point at something that exists.
   for (const t of tests) {
@@ -60,7 +63,8 @@ export function evaluate({ stories, rules, plans, tests }: TraceInput): TraceRes
     const knownStories = storyTags.map((tag) => storyByKey.get(tag.slice(1))).filter((s): s is Story => !!s);
     for (const tag of t.tags.filter((x) => AC_TAG.test(x))) {
       if (storyTags.length === 0) errors.push(`Test "${t.title}" has tag ${tag} but no story tag.`);
-      else if (knownStories.length > 0 && !knownStories.some((s) => s.acs.includes(tag.slice(1)))) {
+      else if (knownStories.length > 0
+        && !knownStories.some((s) => s.acs.includes(tag.slice(1)) || (planAcs.get(s.key) ?? []).includes(tag.slice(1)))) {
         errors.push(`Test "${t.title}" has tag ${tag}, but ${knownStories.map((s) => s.key).join('/')} has no ${tag.slice(1)}.`);
       }
     }
@@ -75,7 +79,14 @@ export function evaluate({ stories, rules, plans, tests }: TraceInput): TraceRes
       continue;
     }
     for (const m of planItem.text.matchAll(/\[(BR-\d+)\]/g)) plannedRules.add(m[1]);
-    for (const ac of story.acs) {
+    const covered = planAcs.get(story.key) ?? [];
+    for (const ac of story.acs.filter((a) => !covered.includes(a))) {
+      warnings.push(`${story.key} ${ac} is in the story but not in the approved plan: re-plan needed.`);
+    }
+    for (const ac of covered.filter((a) => !story.acs.includes(a))) {
+      warnings.push(`${story.key} ${ac} is in the approved plan but no longer in the story: re-plan needed.`);
+    }
+    for (const ac of covered) {
       const covering = tests.filter((t) => t.tags.includes(`@${story.key}`) && t.tags.includes(`@${ac}`));
       rows.push({ item: `${story.key} ${ac}`, tests: covering.map((t) => t.title) });
       if (covering.length === 0) errors.push(`${story.key} ${ac} has no test.`);
