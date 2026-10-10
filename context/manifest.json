@@ -1,0 +1,29 @@
+{
+  "pulled_at": "2026-10-10T23:05:20.557Z",
+  "files": [
+    {
+      "path": "api/openapi.json",
+      "sha256": "f10ecff28152b2027f023678e2aff3dda590da5b16963ef8d36e13b78d56a52a"
+    },
+    {
+      "path": "architecture/adr.txt",
+      "sha256": "bb49ed9a51307adafa45fabb177a7c2d778375f5f5ca70c392439312bbd17fbd"
+    },
+    {
+      "path": "architecture/dsl.txt",
+      "sha256": "b9fe9dd5da41cce32abccd1ef511bbec0318a076efb006e0797d642676e3df4d"
+    },
+    {
+      "path": "budiness-rule/BR-001.txt",
+      "sha256": "158584c316b3a07fceda73f3f351353c60854d3f0ddf540fbf25132ab1fbf5b3"
+    },
+    {
+      "path": "budiness-rule/BR-002.txt",
+      "sha256": "5a56c07b14f22adec62c4a1e617b6b993e4dc31e2b6bbc9152b577d3fbbb69fa"
+    },
+    {
+      "path": "jira-requirement/PROJ-130.txt",
+      "sha256": "d2ce6685371c783c009a63bb71c029e80893d8621b168312ada3ef435b5135ee"
+    }
+  ]
+}

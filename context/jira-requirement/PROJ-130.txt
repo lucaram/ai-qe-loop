@@ -1,0 +1,21 @@
+Key:        PROJ-130
+Type:       Story
+Status:     Ready
+Component:  Login
+Summary:    Lock the account after 5 failed login attempts
+
+Description:
+As an account owner, I want my account locked after repeated failed logins,
+so that nobody can guess my password by trying many times.
+
+Clarifications from the product owner (2026-10-10):
+- The 5th wrong password returns 423 with the locked message. A wrong password on an already-locked account also returns 423 with the locked message.
+- A wrong password during a lock changes nothing: the lock end time and the failed-attempt count stay as they are.
+- When the lock ends, the failed-attempt count is 0. The lock ends at exactly 15:00 after it started: at 14:59 login is still refused (423), at 15:00 it is allowed.
+- An unknown username returns 401 "Wrong username or password." and affects no account.
+
+Acceptance criteria:
+AC-1: Given an active account, when the user enters a wrong password 5 times in a row, then the account is locked and the message "Your account is locked. Try again in 15 minutes." is shown.
+AC-2: Given a locked account, when the user enters the correct password, then login is refused and the same locked message is shown.
+AC-3: Given an account with 4 failed attempts, when the user logs in with the correct password, then login succeeds and the failed-attempt count resets to 0.
+AC-4: Given a locked account, when 15 minutes have passed since the lock, then the user can log in with the correct password.

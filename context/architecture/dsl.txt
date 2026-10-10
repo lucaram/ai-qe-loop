@@ -1,0 +1,36 @@
+workspace "Login System" {
+
+    model {
+        user = person "Account owner"
+
+        system = softwareSystem "Login System" {
+
+            webApp = container "Web App" "Login screens shown in the browser" "React" {
+                loginUI = component "Login UI" "Login form, error and locked messages"
+            }
+
+            authService = container "Auth Service" "Checks passwords, counts failed attempts, locks accounts" "Node.js" {
+                tags "risk:high"
+            }
+
+            authDb = container "Auth Database" "Stores accounts, failed-attempt counts and lock times" "PostgreSQL" {
+                tags "Database"
+            }
+        }
+
+        user -> loginUI "Enters username and password"
+        loginUI -> authService "POST /auth/login" "JSON/HTTPS"
+        authService -> authDb "Reads and updates attempt count and lock time"
+    }
+
+    views {
+        container system "Containers" {
+            include *
+            autoLayout
+        }
+        component webApp "WebAppComponents" {
+            include *
+            autoLayout
+        }
+    }
+}
