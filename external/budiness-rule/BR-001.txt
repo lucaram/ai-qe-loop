@@ -1,0 +1,6 @@
+## BR-001: Account lockout after failed logins
+Rule: After 5 failed login attempts in a row, the account is locked for 15 minutes.
+applies_to: [authService]
+source: ADR-0001
+owner: Identity domain lead
+ways_to_break: [correct-password-while-locked, lock-ends-too-early]

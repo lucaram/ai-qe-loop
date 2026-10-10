@@ -1,0 +1,6 @@
+## BR-002: Successful login resets the counter
+Rule: A successful login sets the failed-attempt count back to 0.
+applies_to: [authService]
+source: ADR-0001
+owner: Identity domain lead
+ways_to_break: [count-not-reset-after-success]

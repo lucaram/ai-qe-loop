@@ -1,0 +1,38 @@
+## ADR-0001: Store the failed-attempt count and lock time in the Auth Database
+status: Accepted
+date: 2026-09-15
+elements: [authService, authDb]
+
+Context:
+The account must lock after 5 failed logins in a row (BR-001) and unlock after
+15 minutes. The Auth Service runs on several servers, so a count kept in one
+server's memory would be wrong.
+
+Decision:
+The Auth Service stores failed_attempts and locked_until on the account row in
+the Auth Database. Each failed login adds 1 to failed_attempts. On the 5th, it
+sets locked_until = now + 15 minutes. A successful login sets failed_attempts
+to 0 (BR-002).
+
+Consequences:
+- The count is correct no matter which server handles the login.
+- Tests can set up a locked account by writing these two fields through a
+  test fixture, instead of waiting 15 minutes.
+
+
+## ADR-0002: The lock is enforced by the Auth Service, not by the Login UI
+status: Accepted
+date: 2026-09-20
+elements: [authService, loginUI]
+
+Context:
+A lock that only the browser enforces can be bypassed by calling the API directly.
+
+Decision:
+The Auth Service decides whether an account is locked. When it is, POST /auth/login
+returns 423 Locked with the message "Your account is locked. Try again in 15 minutes."
+The Login UI only displays the message it receives.
+
+Consequences:
+- The lock rules are tested at API level; the UI tests only check the message is shown.
+- Changing the message text needs a change to the Auth Service, not the UI.
