@@ -24,3 +24,4 @@ npm test
 ## About the approval labels
 
 Labels plus `roles.json` simulate role approvals for a one-person repo. CI verifies who added each label and that it came after the latest commit. In a real team, generate `CODEOWNERS` from `roles.json` and switch to required PR reviews; the role-to-path rules stay the same.
+
