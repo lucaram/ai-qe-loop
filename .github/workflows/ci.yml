@@ -1,0 +1,102 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run test:unit
+
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 14
+
+  traceability:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - name: Check traceability
+        env:
+          # PRs: plans already on the target branch are approved. Pushes: plans before this merge.
+          BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || 'HEAD^' }}
+        run: npm run traceability -- --base "$BASE"
+
+  flaky:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Repeat new or changed tests 5 times
+        run: |
+          files=$(git diff --name-only --diff-filter=AM "origin/${{ github.base_ref }}...HEAD" -- 'tests/**/*.spec.ts')
+          if [ -z "$files" ]; then echo "No new or changed tests."; exit 0; fi
+          echo "$files"
+          npx playwright test $files --repeat-each=5
+
+  assertion-guard:
+    if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'heal/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - run: npm run assertion-guard -- --base "origin/${{ github.base_ref }}"
+
+  mutation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Run Stryker
+        run: |
+          if ! ls tests/api/*.spec.ts >/dev/null 2>&1; then echo "No API tests yet; nothing to measure."; exit 0; fi
+          npm run mutation
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mutation-report
+          path: reports/mutation
+          if-no-files-found: ignore
