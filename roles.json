@@ -10,3 +10,4 @@
     "tsconfig.json", "eslint.config.mjs", ".gitattributes", ".gitignore", ".mcp.json"
   ] }
 }
+
