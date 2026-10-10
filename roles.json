@@ -1,0 +1,8 @@
+{
+  "po":         { "users": ["lucaram"], "approves": ["context/jira-requirement/**", "context/budiness-rule/**", "specs/**"] },
+  "architect":  { "users": ["lucaram"], "approves": ["context/architecture/**"] },
+  "engineer":   { "users": ["lucaram"], "approves": ["context/api/**"] },
+  "developer":  { "users": ["lucaram"], "approves": ["app/**"] },
+  "qe":         { "users": ["lucaram"], "approves": ["tests/**", ".claude/**", "CLAUDE.md"] },
+  "ai-qe-lead": { "users": ["lucaram"], "approves": [".claude/**", "CLAUDE.md", "scripts/**", ".github/**", "roles.json"] }
+}
