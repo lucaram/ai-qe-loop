@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Sign in</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 320px; margin: 64px auto; }
+    form { display: grid; gap: 12px; }
+    #message:empty { display: none; }
+  </style>
+</head>
+<body>
+  <h1>Sign in</h1>
+  <form id="login">
+    <label>Username <input name="username" autocomplete="username" required></label>
+    <label>Password <input name="password" type="password" autocomplete="current-password" required></label>
+    <button type="submit">Sign in</button>
+  </form>
+  <p id="message" role="alert"></p>
+  <script>
+    const form = document.getElementById('login');
+    const message = document.getElementById('message');
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      message.textContent = '';
+      const data = Object.fromEntries(new FormData(form));
+      const response = await fetch('/auth/login', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      const body = await response.json();
+      message.textContent = response.ok ? 'Signed in.' : body.message;
+    });
+  </script>
+</body>
+</html>
