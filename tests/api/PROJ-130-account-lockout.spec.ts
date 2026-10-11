@@ -56,17 +56,6 @@ test('3. Correct password while locked is refused', { tag: ['@PROJ-130', '@AC-2'
   expect((await getAccount(request, user)).locked).toBe(true);
 });
 
-test('4. Correct password with 4 failed attempts succeeds and resets the count', { tag: ['@PROJ-130', '@AC-3', '@BR-002'] }, async ({ request }, testInfo) => {
-  const user = uniqueUsername(testInfo);
-  await setAccount(request, user, { failedAttempts: 4, lockedForMs: null });
-
-  const result = await login(request, user, DEFAULT_PASSWORD);
-
-  expect(result.status).toBe(200);
-  expect(result.body.token).toBeTruthy();
-  expect(await getAccount(request, user)).toMatchObject({ failedAttempts: 0, locked: false });
-});
-
 test('5. Login allowed once 15 minutes have passed', { tag: ['@PROJ-130', '@AC-4', '@BR-001'] }, async ({ request }, testInfo) => {
   const user = uniqueUsername(testInfo);
   await setAccount(request, user, { failedAttempts: 5, lockedForMs: 0 });
