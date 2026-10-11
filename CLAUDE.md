@@ -43,7 +43,7 @@ The healer may change locators, waits on elements or responses, and navigation s
 ## Commands
 
 - `npm run app` — start the app on http://localhost:3000 (`TEST_HOOKS=1` enables test hooks)
-- `npm test` — Playwright tests (starts the app itself)
+- `npm test` — Playwright tests (starts the app itself on port 3000; the Playwright MCP server used by the agents runs its own app on 3100, set by `PW_PORT` in `.mcp.json`)
 - `npm run test:unit` — unit tests for app logic and scripts
 - `npm run typecheck`, `npm run lint`
 - `npm run context:pull` — Stage 1 snapshot
