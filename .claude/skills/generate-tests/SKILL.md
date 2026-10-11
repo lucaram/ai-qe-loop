@@ -35,7 +35,7 @@ test('<scenario title>', { tag: ['@<KEY>', '@AC-n', '@BR-nnn'] }, async ({ reque
 
 Rules:
 - Tags exactly as the scenario heading's IDs.
-- Expected values come from the plan (which came from the context), never from what the app returns.
+- Expected values come from the plan (which came from the context), never from what the app returns. Never assert text that does not appear in `context/` (e.g. the login page's "Signed in."); list it under "Requirement gaps" in the PR body instead.
 - Use `lockedForMs` for time: e.g. `lockedForMs: 60_000` for "one minute left", `lockedForMs: 0` for "lock ends now".
 - Check state changes with `getAccount()` when the plan says a count or lock must (or must not) change.
 
@@ -66,6 +66,7 @@ Body:
 - **Plan:** `specs/<KEY>-<slug>.md`
 - **Tests:** a table of scenario → test file and title → tags
 - **Possible bugs:** failing tests where the app disagrees with the plan, or "None"
+- **Requirement gaps:** text or behaviour the app shows that `context/` does not define, or "None"
 - **Approvals needed:** `- [ ] approved:qe`
 
 Do not add labels and do not merge.

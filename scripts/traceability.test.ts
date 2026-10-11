@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { collectTests, evaluate, parseRuleId, parseStory, type TraceInput } from './traceability';
+import { approvedPlans, collectTests, evaluate, parseRuleId, parseStory, type TraceInput } from './traceability';
 
 const story = parseStory('Key:        PROJ-130\nAC-1: Given...\nAC-2: Given...\n');
 const plan = { key: 'PROJ-130', text: '### 1. Lock [PROJ-130][AC-1][BR-001]\n### 2. Locked [PROJ-130][AC-2][BR-001]\n' };
@@ -70,4 +70,22 @@ test('a context update that removes an AC keeps its tests valid and asks for a r
   ] });
   assert.deepEqual(result.errors, []);
   assert.deepEqual(result.warnings, ['PROJ-130 AC-2 is in the approved plan but no longer in the story: re-plan needed.']);
+});
+
+test('malformed tags are errors, not silently ignored', () => {
+  const result = evaluate(input([
+    { title: 'x', file: 'f', tags: ['@PROJ-130', '@AC-1', '@AC-2', '@BR-001', '@AC9', '@br-001', '@BR-001x', '@PROJ130'] },
+  ]));
+  assert.deepEqual(result.errors, [
+    'Test "x" has malformed tag @AC9. Allowed tags: @<STORY-KEY>, @AC-<n>, @BR-<nnn>.',
+    'Test "x" has malformed tag @br-001. Allowed tags: @<STORY-KEY>, @AC-<n>, @BR-<nnn>.',
+    'Test "x" has malformed tag @BR-001x. Allowed tags: @<STORY-KEY>, @AC-<n>, @BR-<nnn>.',
+    'Test "x" has malformed tag @PROJ130. Allowed tags: @<STORY-KEY>, @AC-<n>, @BR-<nnn>.',
+  ]);
+});
+
+test('approved plans are read from the base branch, not the working tree', () => {
+  const atBase: Record<string, string> = { 'specs/PROJ-130-lockout.md': 'approved text [AC-1]' };
+  const plans = approvedPlans(['specs/README.md', 'specs/PROJ-130-lockout.md'], (file) => atBase[file]);
+  assert.deepEqual(plans, [{ key: 'PROJ-130', text: 'approved text [AC-1]' }]);
 });

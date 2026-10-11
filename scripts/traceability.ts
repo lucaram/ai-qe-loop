@@ -53,6 +53,9 @@ export function evaluate({ stories, rules, plans, tests }: TraceInput): TraceRes
 
   // 1. Every tag must point at something that exists.
   for (const t of tests) {
+    for (const tag of t.tags.filter((x) => !STORY_TAG.test(x) && !AC_TAG.test(x) && !BR_TAG.test(x))) {
+      errors.push(`Test "${t.title}" has malformed tag ${tag}. Allowed tags: @<STORY-KEY>, @AC-<n>, @BR-<nnn>.`);
+    }
     const storyTags = t.tags.filter((tag) => STORY_TAG.test(tag));
     for (const tag of storyTags) {
       if (!storyByKey.has(tag.slice(1))) errors.push(`Test "${t.title}" has unknown tag ${tag}.`);
@@ -112,6 +115,15 @@ export function renderMarkdown({ errors, warnings, rows }: TraceResult): string 
   return lines.join('\n') + '\n';
 }
 
+const PLAN_FILE = /^specs\/([A-Z][A-Z0-9]*-\d+)-.+\.md$/;
+
+// Plans are read as they are on the base branch: the approved version, not the PR's edits.
+export function approvedPlans(filesAtBase: string[], readAtBase: (file: string) => string): { key: string; text: string }[] {
+  return filesAtBase
+    .filter((f) => PLAN_FILE.test(f))
+    .map((f) => ({ key: PLAN_FILE.exec(f)![1], text: readAtBase(f) }));
+}
+
 function readDir(dir: string): string[] {
   return existsSync(dir) ? readdirSync(dir).map((f) => readFileSync(path.join(dir, f), 'utf8')) : [];
 }
@@ -124,12 +136,8 @@ if (isMain(import.meta.url)) {
   const rules = readDir(path.join(CONTEXT_DIR, BUSINESS_RULE_DIR)).map(parseRuleId).filter((r): r is string => !!r);
 
   // A plan counts as approved once it is on the base branch (merged after PO approval).
-  const approvedPlanFiles = execFileSync('git', ['ls-tree', '-r', '--name-only', base, `${SPECS_DIR}/`], { encoding: 'utf8' })
-    .split('\n')
-    .filter((f) => /^specs\/[A-Z][A-Z0-9]*-\d+-.+\.md$/.test(f));
-  const plans = approvedPlanFiles
-    .filter((f) => existsSync(f))
-    .map((f) => ({ key: /^specs\/([A-Z][A-Z0-9]*-\d+)-/.exec(f)![1], text: readFileSync(f, 'utf8') }));
+  const filesAtBase = execFileSync('git', ['ls-tree', '-r', '--name-only', base, `${SPECS_DIR}/`], { encoding: 'utf8' }).split('\n');
+  const plans = approvedPlans(filesAtBase, (file) => execFileSync('git', ['show', `${base}:${file}`], { encoding: 'utf8' }));
 
   const listJson = JSON.parse(execSync('npx playwright test --list --reporter=json', { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }));
   const result = evaluate({ stories, rules, plans, tests: collectTests(listJson) });

@@ -51,3 +51,12 @@ test('a changed source is detected and removed files disappear from context', ()
   assert.equal(result.changed, true);
   assert.equal(existsSync(path.join(context, 'old.txt')), false);
 });
+
+test('a hand edit to context/ is detected and overwritten from the source', () => {
+  const { source, context } = fixture();
+  pullContext(source, context, new Date('2026-10-10T10:00:00Z'));
+  writeFileSync(path.join(context, 'budiness-rule', 'BR-001.txt'), 'edited by hand\n');
+  const result = pullContext(source, context, new Date('2026-10-11T10:00:00Z'));
+  assert.equal(result.changed, true);
+  assert.equal(readFileSync(path.join(context, 'budiness-rule', 'BR-001.txt'), 'utf8'), '## BR-001: Rule\nline two\n');
+});

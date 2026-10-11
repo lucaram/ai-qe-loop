@@ -10,7 +10,8 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # Cancel superseded PR runs only; every push to main keeps its own result.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   typecheck-lint:
@@ -66,7 +67,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Repeat new or changed tests 5 times
         run: |
-          files=$(git diff --name-only --diff-filter=AM "origin/${{ github.base_ref }}...HEAD" -- 'tests/**/*.spec.ts')
+          files=$(git diff --name-only --diff-filter=AM "origin/${{ github.base_ref }}...HEAD" -- ':(glob)tests/**/*.spec.ts')
           if [ -z "$files" ]; then echo "No new or changed tests."; exit 0; fi
           echo "$files"
           npx playwright test $files --repeat-each=5

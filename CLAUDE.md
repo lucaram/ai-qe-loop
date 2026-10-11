@@ -26,6 +26,7 @@ This repo runs an AI quality loop: AI does the work, people approve anything tha
 - API tests use `tests/support/api.ts`: `login()` checks every response against the API contract; `setAccount()` / `getAccount()` set up and read state through the test hooks (ADR-0001). Never wait for real time to pass.
 - Every test uses its own account: `uniqueUsername(testInfo)`.
 - Lock rules are tested at API level. UI tests only check that the message from the API is shown (ADR-0002).
+- Tests only assert text that appears in `context/` (story, business rules, ADRs, API contract). If the page shows text the context does not define (e.g. the login page's "Signed in."), do not assert it; assert the behaviour another way (e.g. no error alert) and report the missing text as a requirement gap in the PR.
 - Branches: `context/<yyyy-mm-dd>`, `<KEY>-plan`, `<KEY>-tests`, `heal/<yyyy-mm-dd>`, `framework/<topic>`.
 - PR titles start with the story key when there is one: `PROJ-130: test plan`.
 

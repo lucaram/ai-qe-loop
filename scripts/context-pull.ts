@@ -31,6 +31,13 @@ function sameFiles(a: ManifestEntry[], b: ManifestEntry[]): boolean {
   return a.length === b.length && a.every((entry, i) => entry.path === b[i].path && entry.sha256 === b[i].sha256);
 }
 
+// True when context/ holds exactly the manifest's files with the manifest's hashes (catches hand edits).
+function contextMatches(contextDir: string, entries: ManifestEntry[]): boolean {
+  const present = listFiles(contextDir).filter((f) => f !== MANIFEST);
+  return present.length === entries.length && entries.every((e) =>
+    existsSync(path.join(contextDir, e.path)) && hashContent(readFileSync(path.join(contextDir, e.path), 'utf8')) === e.sha256);
+}
+
 export function pullContext(sourceDir: string, contextDir: string, now: Date): { changed: boolean; manifest: Manifest } {
   const files = listFiles(sourceDir).map((rel) => ({
     rel,
@@ -41,7 +48,7 @@ export function pullContext(sourceDir: string, contextDir: string, now: Date): {
   const manifestPath = path.join(contextDir, MANIFEST);
   if (existsSync(manifestPath)) {
     const previous = JSON.parse(readFileSync(manifestPath, 'utf8')) as Manifest;
-    if (sameFiles(previous.files, entries)) return { changed: false, manifest: previous };
+    if (sameFiles(previous.files, entries) && contextMatches(contextDir, entries)) return { changed: false, manifest: previous };
   }
 
   rmSync(contextDir, { recursive: true, force: true });
