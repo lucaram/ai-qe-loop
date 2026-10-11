@@ -9,6 +9,7 @@ description: Change the AI QE framework itself (CLAUDE.md, skills, agents, scrip
 2. `git switch -c framework/<short-topic>`
 3. Make the change the user asked for. Keep `CLAUDE.md`, the skills and the scripts consistent with each other: if a convention changes, update every place that states it.
 4. Do not edit `.claude/agents/playwright-test-*.md` by hand. To update them, run `npx playwright init-agents --loop=claude` and commit the result as is.
+   `init-agents` also rewrites `.mcp.json`: add back `"env": { "PW_PORT": "3100" }` to the `playwright-test` server, so the agents' app does not take port 3000 from `npm test`.
 5. Run `npm run typecheck && npm run lint && npm run test:unit && npm test`.
 6. Commit, push and open the PR:
    ```bash

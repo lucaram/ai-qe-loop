@@ -4,3 +4,4 @@ playwright-report/
 reports/
 .stryker-tmp/
 .superpowers/
+.playwright-mcp/
