@@ -2,6 +2,9 @@
 
 This repo runs an AI quality loop: AI does the work, people approve anything that defines what "correct" means.
 
+- The framework this repo implements (all six stages, their gates and build status): `docs/framework.md`.
+- Why it is built this way: `docs/decisions.md`. Read both before changing the framework or building a new stage.
+
 | Stage | Status | Where |
 |---|---|---|
 | 1. Versioned context | Built | `/pull-context`, `context/` |

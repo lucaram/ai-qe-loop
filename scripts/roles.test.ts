@@ -11,3 +11,9 @@ test('framework config files need the AI QE Lead', () => {
     assert.ok(requiredRoles(roles, [file]).includes('ai-qe-lead'), `${file} must need ai-qe-lead`);
   }
 });
+
+test('the framework description and decisions log need the AI QE Lead', () => {
+  for (const file of ['docs/framework.md', 'docs/decisions.md']) {
+    assert.ok(requiredRoles(roles, [file]).includes('ai-qe-lead'), `${file} must need ai-qe-lead`);
+  }
+});
