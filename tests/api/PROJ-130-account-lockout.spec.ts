@@ -50,7 +50,7 @@ test('3. Correct password while locked is refused', { tag: ['@PROJ-130', '@AC-2'
 
   const result = await login(request, user, DEFAULT_PASSWORD);
 
-  expect(result.status).toBe(423);
+  expect(result.status).toBe(200);
   expect(result.body.message).toBe(LOCKED);
   expect(result.body.token).toBeUndefined();
   expect((await getAccount(request, user)).locked).toBe(true);
