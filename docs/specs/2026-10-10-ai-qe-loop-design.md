@@ -1,3 +1,5 @@
+> **Superseded in parts.** This is the original design (2026-10-10). Later decisions changed some details (approvals from the base branch, push time, plan-based traceability, tag rules, MCP port). Where this file disagrees with `docs/decisions.md` or the code, those win.
+
 # AI QE Loop — Stages 1–3 Design
 
 Date: 2026-10-10

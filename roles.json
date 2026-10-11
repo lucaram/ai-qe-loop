@@ -7,6 +7,7 @@
   "ai-qe-lead": { "users": ["lucaram"], "approves": [
     ".claude/**", "CLAUDE.md", "scripts/**", ".github/**", "roles.json",
     "package.json", "package-lock.json", "playwright.config.ts", "stryker.config.json",
-    "tsconfig.json", "eslint.config.mjs", ".gitattributes", ".gitignore", ".mcp.json"
+    "tsconfig.json", "eslint.config.mjs", ".gitattributes", ".gitignore", ".mcp.json",
+    "docs/framework.md", "docs/decisions.md"
   ] }
 }
